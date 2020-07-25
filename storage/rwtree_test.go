@@ -2,7 +2,10 @@ package storage
 
 import (
 	"fmt"
+	"math/rand"
+	"runtime/debug"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -138,4 +141,69 @@ func TestMutableTree_Iterate(t *testing.T) {
 		fmt.Printf("%q -> %q\n", key, value)
 		return false
 	})
+}
+
+func capturePanic(f func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v: %s", r, debug.Stack())
+		}
+	}()
+	err = f()
+	return
+}
+
+func TestConcurrentReadWriteSave(t *testing.T) {
+	rwt, err := NewRWTree(dbm.NewMemDB(), 100)
+	require.NoError(t, err)
+	n := 100
+
+	doneCh := make(chan struct{})
+	errCh := make(chan interface{})
+
+	go func() {
+		for b := byte(0); true; b++ {
+			val := []byte{b}
+			go func() {
+				err := capturePanic(func() error {
+					rwt.Set(val, val)
+					return nil
+				})
+				if err != nil {
+					errCh <- err
+				}
+			}()
+			go func() {
+				err := capturePanic(func() error {
+					_, err := rwt.Get(val)
+					return err
+				})
+				if err != nil {
+					errCh <- err
+				}
+			}()
+
+			select {
+			case <-doneCh:
+				return
+			default:
+			}
+		}
+	}()
+
+	for i := 0; i < n/10; i++ {
+		time.Sleep(time.Duration(rand.Int63n(100)) * time.Millisecond)
+		err := capturePanic(func() error {
+			_, _, err := rwt.Save()
+			return err
+		})
+		if err != nil {
+			break
+		}
+	}
+	close(doneCh)
+
+	for err :=  range errCh {
+		t.Fatal(err)
+	}
 }
