@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	io "io"
 	math "math"
+	math_big "math/big"
 	math_bits "math/bits"
 	time "time"
 
@@ -1267,7 +1268,7 @@ type CallData struct {
 	Caller               github_com_hyperledger_burrow_crypto.Address  `protobuf:"bytes,1,opt,name=Caller,proto3,customtype=github.com/hyperledger/burrow/crypto.Address" json:"Caller"`
 	Callee               github_com_hyperledger_burrow_crypto.Address  `protobuf:"bytes,2,opt,name=Callee,proto3,customtype=github.com/hyperledger/burrow/crypto.Address" json:"Callee"`
 	Data                 github_com_hyperledger_burrow_binary.HexBytes `protobuf:"bytes,3,opt,name=Data,proto3,customtype=github.com/hyperledger/burrow/binary.HexBytes" json:"Data"`
-	Value                uint64                                        `protobuf:"varint,4,opt,name=Value,proto3" json:"Value,omitempty"`
+	Value                *math_big.Int                                 `protobuf:"varint,4,opt,name=Value,proto3" json:"Value,omitempty"`
 	Gas                  uint64                                        `protobuf:"varint,5,opt,name=Gas,proto3" json:"Gas,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
 	XXX_unrecognized     []byte                                        `json:"-"`
@@ -1305,7 +1306,7 @@ var xxx_messageInfo_CallData proto.InternalMessageInfo
 
 func (m *CallData) GetValue() uint64 {
 	if m != nil {
-		return m.Value
+		return m.Value.Uint64()
 	}
 	return 0
 }
@@ -2625,8 +2626,8 @@ func (m *CallData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x28
 	}
-	if m.Value != 0 {
-		i = encodeVarintExec(dAtA, i, uint64(m.Value))
+	if m.Value.Cmp(math_big.NewInt(0)) != 0 {
+		i = encodeVarintExec(dAtA, i, uint64(m.Value.Uint64()))
 		i--
 		dAtA[i] = 0x20
 	}
@@ -3151,8 +3152,8 @@ func (m *CallData) Size() (n int) {
 	n += 1 + l + sovExec(uint64(l))
 	l = m.Data.Size()
 	n += 1 + l + sovExec(uint64(l))
-	if m.Value != 0 {
-		n += 1 + sovExec(uint64(m.Value))
+	if m.Value.Cmp(math_big.NewInt(0)) != 0 {
+		n += 1 + sovExec(uint64(m.Value.Uint64()))
 	}
 	if m.Gas != 0 {
 		n += 1 + sovExec(uint64(m.Gas))
@@ -6420,7 +6421,7 @@ func (m *CallData) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
 			}
-			m.Value = 0
+			value := uint64(0)
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowExec
@@ -6430,11 +6431,12 @@ func (m *CallData) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Value |= uint64(b&0x7F) << shift
+				value |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			m.Value = math_big.NewInt(int64(value))
 		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Gas", wireType)

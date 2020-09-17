@@ -5,7 +5,6 @@ package evm
 
 import (
 	"fmt"
-
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/acm/acmstate"
 	"github.com/hyperledger/burrow/execution/engine"
@@ -84,7 +83,7 @@ func (vm *EVM) Execute(st acmstate.ReaderWriter, blockchain engine.Blockchain, e
 		EventSink:  eventSink,
 	}
 
-	output, err := vm.Contract(code).Call(state, params)
+	output, err := vm.Contract(code).Call(state, params, st.Transfer)
 	if err == nil {
 		// Only sync back when there was no exception
 		err = state.CallFrame.Sync()

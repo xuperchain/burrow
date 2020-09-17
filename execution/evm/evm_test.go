@@ -1035,7 +1035,7 @@ func TestEVM(t *testing.T) {
 		params := engine.CallParams{
 			Caller: account1,
 			Callee: unknownAddress,
-			Value:  amt,
+			Value:  big.NewInt(int64(amt)),
 			Gas:    &gas,
 		}
 		_, ex := vm.Execute(st, blockchain, eventSink, params, nil)
@@ -1727,7 +1727,7 @@ func makeAccountWithCode(t testing.TB, st acmstate.ReaderWriter, name string, co
 
 func addToBalance(t testing.TB, st acmstate.ReaderWriter, address crypto.Address, amount uint64) {
 	err := native.UpdateAccount(st, address, func(account *acm.Account) error {
-		return account.AddToBalance(amount)
+		return account.AddToBalance(big.NewInt(int64(amount)))
 	})
 	require.NoError(t, err)
 }

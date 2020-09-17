@@ -201,7 +201,7 @@ func (srv *EthService) EthGetBalance(req *web3.EthGetBalanceParams) (*web3.EthGe
 	}
 
 	return &web3.EthGetBalanceResult{
-		GetBalanceResult: x.EncodeBytes(balance.NativeToWei(acc.Balance).Bytes()),
+		GetBalanceResult: x.EncodeBytes(balance.NativeToWei(acc.Balance.Uint64()).Bytes()),
 	}, nil
 }
 

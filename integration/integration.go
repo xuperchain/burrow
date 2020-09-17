@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path"
 	"strconv"
@@ -170,7 +171,8 @@ func TestGenesisDoc(addressables []*acm.PrivateAccount, vals ...int) *genesis.Ge
 	accounts := make(map[string]*acm.Account, len(addressables))
 	for i, pa := range addressables {
 		account := acm.FromAddressable(pa)
-		account.Balance += 1 << 32
+		balance := big.NewInt(1 << 32)
+		account.Balance = account.Balance.Add(account.Balance, balance)
 		account.Permissions = permission.AllAccountPermissions.Clone()
 		accounts[fmt.Sprintf("user_%v", i)] = account
 	}

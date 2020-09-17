@@ -2,6 +2,7 @@ package native
 
 import (
 	"bytes"
+	"math/big"
 
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/acm/acmstate"
@@ -141,17 +142,17 @@ func Transfer(st acmstate.ReaderWriter, from, to crypto.Address, amount uint64) 
 	if err != nil {
 		return err
 	}
-	if acc.Balance < amount {
+	if acc.Balance.Cmp(big.NewInt(int64(amount))) == -1 {
 		return errors.Codes.InsufficientBalance
 	}
 	err = UpdateAccount(st, from, func(account *acm.Account) error {
-		return account.SubtractFromBalance(amount)
+		return account.SubtractFromBalance(big.NewInt(int64(amount)))
 	})
 	if err != nil {
 		return err
 	}
 	return UpdateAccount(st, to, func(account *acm.Account) error {
-		return account.AddToBalance(amount)
+		return account.AddToBalance(big.NewInt(int64(amount)))
 	})
 }
 

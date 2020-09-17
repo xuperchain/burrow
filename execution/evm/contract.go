@@ -28,12 +28,14 @@ type Contract struct {
 	*Code
 }
 
-func (c *Contract) Call(state engine.State, params engine.CallParams) ([]byte, error) {
-	return native.Call(state, params, c.execute)
+func (c *Contract) Call(state engine.State, params engine.CallParams,
+	transfer func(crypto.Address, crypto.Address, *big.Int) error) ([]byte, error) {
+	return native.Call(state, params, c.execute, transfer)
 }
 
 // Executes the EVM code passed in the appropriate context
-func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, error) {
+func (c *Contract) execute(st engine.State, params engine.CallParams,
+	transfer func(crypto.Address, crypto.Address, *big.Int) error) ([]byte, error) {
 	c.debugf("(%d) (%s) %s (code=%d) gas: %v (d) %X\n",
 		st.CallFrame.CallStackDepth(), params.Caller, params.Callee, c.Length(), *params.Gas, params.Input)
 
@@ -336,7 +338,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 			address := stack.PopAddress()
 			maybe.PushError(useGasNegative(params.Gas, native.GasGetAccount))
 			balance := mustGetAccount(st.CallFrame, maybe, address).Balance
-			stack.Push64(balance)
+			stack.PushBigInt(balance)
 			c.debugf(" => %v (%v)\n", balance, address)
 
 		case ORIGIN: // 0x32
@@ -348,7 +350,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 			c.debugf(" => %v\n", params.Caller)
 
 		case CALLVALUE: // 0x34
-			stack.Push64(params.Value)
+			stack.PushBigInt(params.Value)
 			c.debugf(" => %v\n", params.Value)
 
 		case CALLDATALOAD: // 0x35
@@ -588,7 +590,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
 			returnData = nil
-			contractValue := stack.Pop64()
+			contractValue := stack.PopBigInt()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			input := memory.Read(offset, size)
 
@@ -633,7 +635,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 					Input:  input,
 					Value:  contractValue,
 					Gas:    params.Gas,
-				})
+				}, transfer)
 			if callErr != nil {
 				stack.Push(Zero256)
 				// Note we both set the return buffer and return the result normally in order to service the error to
@@ -662,7 +664,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 			// caller value is used.  for CALL and CALLCODE value is stored
 			// on stack and needs to be overwritten from the given value.
 			if op != DELEGATECALL && op != STATICCALL {
-				value = stack.Pop64()
+				value = stack.PopBigInt()
 			}
 			// inputs
 			inOffset, inSize := stack.PopBigInt(), stack.PopBigInt()
@@ -772,7 +774,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 			}
 
 			var callErr error
-			returnData, callErr = c.Dispatch(acc).Call(childState, calleeParams)
+			returnData, callErr = c.Dispatch(acc).Call(childState, calleeParams, transfer)
 
 			if callErr == nil {
 				// Sync error is a hard stop
