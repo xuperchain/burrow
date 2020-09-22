@@ -215,7 +215,7 @@ func (e *execContext) ResolveFunc(module, field string) exec.FunctionImport {
 
 			// ewasm value is little endian 128 bit value
 			bs := make([]byte, 16)
-			binary.LittleEndian.PutUint64(bs, acc.Balance)
+			binary.LittleEndian.PutUint64(bs, acc.Balance.Uint64())
 
 			copy(vm.Memory[balancePtr:], bs)
 

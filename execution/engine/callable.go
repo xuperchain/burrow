@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/hyperledger/burrow/crypto"
@@ -19,13 +20,13 @@ type CallParams struct {
 	Caller   crypto.Address
 	Callee   crypto.Address
 	Input    []byte
-	Value    uint64
+	Value    *big.Int
 	Gas      *uint64
 }
 
 // Effectively a contract, but can either represent a single function or a contract with multiple functions and a selector
 type Callable interface {
-	Call(state State, params CallParams) (output []byte, err error)
+	Call(state State, params CallParams, transfer func(crypto.Address, crypto.Address, *big.Int) error) (output []byte, err error)
 	// Fully qualified name of the callable, including any contract qualification
 }
 

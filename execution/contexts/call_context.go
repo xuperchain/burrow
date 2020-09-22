@@ -2,6 +2,7 @@ package contexts
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/acm/acmstate"
@@ -69,7 +70,7 @@ func (ctx *CallContext) Precheck() (*acm.Account, *acm.Account, error) {
 	}
 
 	// Fees are handle by the CallContext, values transfers (i.e. balances) are handled in the VM (or in Check())
-	err = inAcc.SubtractFromBalance(ctx.tx.Fee)
+	err = inAcc.SubtractFromBalance(big.NewInt(int64(ctx.tx.Fee)))
 	if err != nil {
 		return nil, nil, errors.Errorf(errors.Codes.InsufficientFunds,
 			"Input account %v (balance: %d) does not have sufficient balance to cover input amount: %v",
@@ -107,7 +108,7 @@ func (ctx *CallContext) Precheck() (*acm.Account, *acm.Account, error) {
 
 func (ctx *CallContext) Check(inAcc *acm.Account, value uint64) error {
 	// We do a trial balance subtraction here
-	err := inAcc.SubtractFromBalance(value)
+	err := inAcc.SubtractFromBalance(big.NewInt(int64(value)))
 	if err != nil {
 		return err
 	}
@@ -191,7 +192,7 @@ func (ctx *CallContext) Deliver(inAcc, outAcc *acm.Account, value uint64) error 
 		Caller: caller,
 		Callee: callee,
 		Input:  ctx.tx.Data,
-		Value:  value,
+		Value:  big.NewInt(int64(value)),
 		Gas:    &gas,
 	}
 

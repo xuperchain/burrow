@@ -6,6 +6,7 @@ package state
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/hyperledger/burrow/execution/registry"
@@ -157,7 +158,7 @@ func MakeGenesisState(db dbm.DB, genesisDoc *genesis.GenesisDoc) (*State, error)
 		perm := genAcc.Permissions
 		acc := &acm.Account{
 			Address:     genAcc.Address,
-			Balance:     genAcc.Amount,
+			Balance:     big.NewInt(int64(genAcc.Amount)),
 			Permissions: perm,
 		}
 		err := s.writeState.UpdateAccount(acc)
